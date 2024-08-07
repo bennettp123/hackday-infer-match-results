@@ -35,4 +35,18 @@ if __name__ == '__main__':
         Accept="application/json"
     )
 
-    print(response['Body'].read().decode('utf-8'))
+    response_json = json.loads(response['Body'].read().decode('utf-8'))
+    predictions = response_json['predictions']
+
+    for prediction in predictions:
+        score = int(prediction['score'])
+        if score == 0:
+            print('Prediction: a draw!')
+        elif score > 0:
+            winner = 'home team'
+            margin = f'{score} points'
+        else:
+            winner = 'away team'
+            margin = f'{-score} points'
+
+        print(f'Prediction: {winner} to win by {margin}')
