@@ -1,28 +1,38 @@
 import boto3
-import pandas as pd
+import argparse
+import json
 
-client = boto3.client(
-    'runtime.sagemaker',
-    region_name='ap-southeast-2',
-)
 
-#body = pd.DataFrame([
-#    ['home_team_id', 'away_team_id', 'venue_id'],
-#    [10, 100, 40],
-#]).to_csv(header=True, index=False).encode("utf-8")
+# only used when --enpoint-name is omitted
+DEFAULT_ENDPOINT = \
+    'canvas-predict-score-difference-trimmed-full-08-07-2024-5-01-PM'
 
-body = bytes(
-    '{ "features": [ 10, 100, 40 ] }',
-    encoding='utf-8',
-)
 
-endpoint_name = 'canvas-predict-score-difference-trimmed-full-08-07-2024-5-01-PM'
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
 
-response = client.invoke_endpoint(
-    EndpointName=endpoint_name,
-    ContentType="application/json",
-    Body=body,
-    Accept="application/json"
-)
+    parser.add_argument('--home-team-id', type=int, required=True)
+    parser.add_argument('--away-team-id', type=int, required=True)
+    parser.add_argument('--venue-id', type=int, required=True)
+    parser.add_argument('--endpoint-name', type=str, default=DEFAULT_ENDPOINT)
 
-print(response['Body'].read().decode('utf-8'))
+    args = parser.parse_args()
+
+    client = boto3.client('runtime.sagemaker')
+
+    body = {
+        "features": [
+            int(args.home_team_id),
+            int(args.away_team_id),
+            int(args.venue_id),
+        ]
+    }
+
+    response = client.invoke_endpoint(
+        EndpointName=args.endpoint_name,
+        ContentType="application/json",
+        Body=bytes(json.dumps(body), encoding='utf-8'),
+        Accept="application/json"
+    )
+
+    print(response['Body'].read().decode('utf-8'))
