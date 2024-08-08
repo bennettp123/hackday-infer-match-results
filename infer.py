@@ -9,28 +9,11 @@ DEFAULT_ENDPOINT = \
     'canvas-predict-score-difference-trimmed-full-08-07-2024-5-01-PM'
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--home-team-id', type=int, required=True)
-    parser.add_argument('--away-team-id', type=int, required=True)
-    parser.add_argument('--venue-id', type=int, required=True)
-    parser.add_argument('--endpoint-name', type=str, default=DEFAULT_ENDPOINT)
-    args = parser.parse_args()
-
+def get_predictions(matches):
     sagemaker_runtime = boto3.client('runtime.sagemaker')
 
-    # prepare request data
-    records = [
-        {
-            'home_team_id': args.home_team_id,
-            'away_team_id': args.away_team_id,
-            'venue_id': args.venue_id,
-        },
-        # ... more records (optional)
-    ]
-    
     # convert to csv
-    data = pd.DataFrame.from_records(records)
+    data = pd.DataFrame.from_records(matches)
     body = data.to_csv(
         columns=['home_team_id', 'away_team_id', 'venue_id'],
         index=False,
@@ -48,6 +31,28 @@ if __name__ == '__main__':
     # parse response
     response_json = json.loads(response['Body'].read().decode('utf-8'))
     predictions = response_json['predictions']
+
+    return predictions
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--home-team-id', type=int, required=True)
+    parser.add_argument('--away-team-id', type=int, required=True)
+    parser.add_argument('--venue-id', type=int, required=True)
+    parser.add_argument('--endpoint-name', type=str, default=DEFAULT_ENDPOINT)
+    args = parser.parse_args()
+
+    matches = [
+        {
+            'home_team_id': args.home_team_id,
+            'away_team_id': args.away_team_id,
+            'venue_id': args.venue_id,
+        },
+        # ... more records (optional)
+    ]
+
+    predictions = get_predictions(matches)
 
     # print predicted results
     for prediction in predictions:
